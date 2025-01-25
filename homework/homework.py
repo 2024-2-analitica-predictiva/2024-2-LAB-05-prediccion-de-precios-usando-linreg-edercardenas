@@ -69,11 +69,11 @@ import pandas as pd
 import pickle
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder, MinMaxScaler
+from sklearn.preprocessing import OneHotEncoder, MinMaxScaler, StandardScaler
 from sklearn.feature_selection import SelectKBest, f_regression
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
+from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error, median_absolute_error
 
 
 # Paso 1.
@@ -94,6 +94,10 @@ df_test.drop(columns=['Year', 'Car_Name'], inplace=True)
 # Eliminamos los registros con informacion no disponible
 df_train = df_train.dropna()
 df_test = df_test.dropna()
+
+# # Eliminamos los registros duplicados
+# df_train = df_train.drop_duplicates()
+# df_test = df_test.drop_duplicates()
 
 # Paso 2.
 print('Paso 2...')
@@ -120,17 +124,17 @@ print('Paso 3...')
 transformer = ColumnTransformer(
     transformers=[
         ('ohe', OneHotEncoder(), ['Fuel_Type', 'Selling_type', 'Transmission']),
-        # ('scaler', MinMaxScaler(), ['Selling_Price', 'Driven_kms', 'Owner', 'Age']),
+        ('scaler', MinMaxScaler(), ['Selling_Price', 'Driven_kms', 'Owner', 'Age']),
     ],
-    remainder="passthrough",
+    # remainder="passthrough",
 )
 
 # Creamos el pipeline
 pipeline = Pipeline(
     steps =[
         ('transformer', transformer),
-        ('scaler', MinMaxScaler()),
         ('feature_selection', SelectKBest(score_func=f_regression)),
+        # ('scaler2', MinMaxScaler()),
         ('linearregression', LinearRegression()),
     ],
     verbose=False,
@@ -176,7 +180,7 @@ metrics = {
     'dataset': 'train',
     'r2': r2_score(y_train, y_train_pred),
     'mse': mean_squared_error(y_train, y_train_pred),
-    'mad': mean_absolute_error(y_train, y_train_pred)
+    'mad': median_absolute_error(y_train, y_train_pred)
 }
 
 if not os.path.exists("files/output"):
@@ -191,7 +195,7 @@ metrics = {
     'dataset': 'test',
     'r2': r2_score(y_test, y_test_pred),
     'mse': mean_squared_error(y_test, y_test_pred),
-    'mad': mean_absolute_error(y_test, y_test_pred)
+    'mad': median_absolute_error(y_test, y_test_pred)
 }
 
 with open("files/output/metrics.json", "a") as f:
